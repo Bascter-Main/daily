@@ -1,0 +1,43 @@
+name: Daily
+
+on:
+  push:
+    branches: [ master ]
+  schedule:
+    - cron: 0 0 * * *
+      
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup key
+      uses: webfactory/ssh-agent@v0.2.0
+      with: 
+        ssh-private-key: ${{ secrets.daily }}
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Update subscription url
+      run: |
+        git config core.ignorecase false
+        git config --global user.email ${{ secrets.email }}
+        git config --global user.name "Main"
+        git clone ${{ secrets.git }}
+        ls
+        cd ${{ secrets.directory }}
+        ls
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        python ${{ secrets.script }}
+        mv sub.txt ..
+        cd ..
+        git init
+        git add sub.txt
+        git commit -m 'daily update'
+        git push origin master
